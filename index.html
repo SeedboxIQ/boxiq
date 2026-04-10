@@ -531,35 +531,24 @@
 
 <script>
   /* ═══════════════════════════════════════════════════════════════
-     DATA SOURCE
-     Phase 1 (now):  Demo data hardcoded below
-     Phase 2 (next): Connect to your Google Sheet — see comments
+     DATA SOURCE — Google Sheets (live)
+     To add/update Gate IDs, edit the Google Sheet directly.
+     Changes appear on the site within seconds, no code changes needed.
   ═══════════════════════════════════════════════════════════════ */
 
-  const DEMO_DATA = {
-    'SG01001091': { brand: 'Hybrid — DKC 58-64',      lot: 'LOT-2025-A-0042' },
-    'SG01001092': { brand: 'Hybrid — P1197AM',         lot: 'LOT-2025-B-0017' },
-    'SG01001093': { brand: 'Hybrid — NK Proven 19A11', lot: 'LOT-2025-A-0093' },
-  };
-
-  // PHASE 2: paste your Google Sheets CSV URL here and follow instructions below
-  // const SHEETS_CSV_URL = 'https://docs.google.com/spreadsheets/d/YOUR_ID/pub?output=csv';
+  const SHEETS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSh1nMEHKWSZRoI8xQ_fyigc2hQZau3fELAelh4Bg5z2gxpRXweLxvPxptM1lsCowY45_AW2lQnSkt6/pub?gid=0&single=true&output=csv';
 
   async function fetchGateData(gateId) {
-    // Phase 1 — demo data
-    return DEMO_DATA[gateId] || null;
-
-    // Phase 2 — delete the line above and uncomment:
-    // try {
-    //   const res = await fetch(SHEETS_CSV_URL);
-    //   const csv = await res.text();
-    //   const rows = csv.trim().split('\n').map(r => r.split(','));
-    //   const h = rows[0].map(c => c.trim().toLowerCase());
-    //   const gi = h.indexOf('gate_id'), bi = h.indexOf('brand'), li = h.indexOf('lot');
-    //   const row = rows.slice(1).find(r => r[gi]?.trim().toUpperCase() === gateId);
-    //   if (!row) return null;
-    //   return { brand: row[bi]?.trim(), lot: row[li]?.trim() };
-    // } catch(e) { console.error(e); return null; }
+    try {
+      const res = await fetch(SHEETS_CSV_URL);
+      const csv = await res.text();
+      const rows = csv.trim().split('\n').map(r => r.split(','));
+      const h = rows[0].map(c => c.trim().toLowerCase());
+      const gi = h.indexOf('gate_id'), bi = h.indexOf('brand'), li = h.indexOf('lot');
+      const row = rows.slice(1).find(r => r[gi]?.trim().toUpperCase() === gateId);
+      if (!row) return null;
+      return { brand: row[bi]?.trim(), lot: row[li]?.trim() };
+    } catch(e) { console.error(e); return null; }
   }
 
   /* ═══════════════════════════════════════════════════════════════
