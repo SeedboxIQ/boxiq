@@ -7,6 +7,8 @@
   <meta name="description" content="Look up seed brand and lot information by Gate ID" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Space+Mono&display=swap" rel="stylesheet">
+  <!-- jsQR: reads QR codes from the phone camera feed, no app install needed -->
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -73,12 +75,7 @@
       clip-path: polygon(50% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
     }
 
-    .brand-name {
-      font-size: 22px;
-      font-weight: 600;
-      color: var(--text);
-    }
-
+    .brand-name { font-size: 22px; font-weight: 600; color: var(--text); }
     .brand-name .accent { color: var(--green); }
 
     .powered-tag {
@@ -89,12 +86,7 @@
       letter-spacing: 0.04em;
     }
 
-    .hero h1 {
-      font-size: 19px;
-      font-weight: 500;
-      line-height: 1.35;
-      margin-bottom: 0.5rem;
-    }
+    .hero h1 { font-size: 19px; font-weight: 500; line-height: 1.35; margin-bottom: 0.5rem; }
 
     .hero p {
       font-size: 14px;
@@ -113,11 +105,7 @@
       margin: 1.25rem 1rem 0;
     }
 
-    .lookup-card h2 {
-      font-size: 15px;
-      font-weight: 500;
-      margin-bottom: 4px;
-    }
+    .lookup-card h2 { font-size: 15px; font-weight: 500; margin-bottom: 4px; }
 
     .lookup-card .sub {
       font-size: 13px;
@@ -126,11 +114,7 @@
       line-height: 1.5;
     }
 
-    .input-row {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 12px;
-    }
+    .input-row { display: flex; gap: 8px; margin-bottom: 12px; }
 
     .input-row input {
       flex: 1;
@@ -198,11 +182,12 @@
     .btn-scan {
       width: 100%;
       background: #fafafa;
-      border: 1px solid var(--border);
-      color: var(--muted);
-      padding: 10px;
+      border: 1.5px dashed var(--green-mid);
+      color: var(--green);
+      padding: 12px;
       border-radius: 8px;
-      font-size: 13px;
+      font-size: 14px;
+      font-weight: 500;
       cursor: pointer;
       font-family: 'DM Sans', sans-serif;
       display: flex;
@@ -212,13 +197,123 @@
       transition: background 0.15s;
     }
 
-    .btn-scan:hover { background: #f0f0ee; }
+    .btn-scan:hover { background: var(--green-light); }
 
-    .scan-icon-svg {
-      width: 16px;
-      height: 16px;
+    /* ── Camera Scanner ── */
+    .scanner-wrap {
+      display: none;
+      margin-top: 1rem;
+      border-radius: 10px;
+      overflow: hidden;
+      position: relative;
+      background: #000;
+    }
+
+    .scanner-wrap.active { display: block; }
+
+    #scannerVideo {
+      width: 100%;
+      display: block;
+      border-radius: 10px;
+    }
+
+    .scanner-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    .scan-frame {
+      width: 180px;
+      height: 180px;
+      position: relative;
+    }
+
+    .scan-frame::before,
+    .scan-frame::after,
+    .scan-frame span::before,
+    .scan-frame span::after {
+      content: '';
+      position: absolute;
+      width: 28px;
+      height: 28px;
+      border-color: #fff;
+      border-style: solid;
+    }
+
+    .scan-frame::before  { top: 0;    left: 0;  border-width: 3px 0 0 3px; border-radius: 4px 0 0 0; }
+    .scan-frame::after   { top: 0;    right: 0; border-width: 3px 3px 0 0; border-radius: 0 4px 0 0; }
+    .scan-frame span::before { bottom: 0; left: 0;  border-width: 0 0 3px 3px; border-radius: 0 0 0 4px; }
+    .scan-frame span::after  { bottom: 0; right: 0; border-width: 0 3px 3px 0; border-radius: 0 0 4px 0; }
+
+    .scan-line {
+      position: absolute;
+      left: 10%;
+      right: 10%;
+      height: 2px;
+      background: rgba(74,200,60,0.8);
+      animation: scanMove 2s linear infinite;
+      top: 10%;
+    }
+
+    @keyframes scanMove {
+      0%   { top: 10%; }
+      50%  { top: 85%; }
+      100% { top: 10%; }
+    }
+
+    .scanner-hint {
+      color: rgba(255,255,255,0.85);
+      font-size: 12px;
+      margin-top: 14px;
+      text-align: center;
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    .btn-cancel-scan {
+      display: none;
+      width: 100%;
+      margin-top: 10px;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 9px;
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      transition: background 0.15s;
+    }
+
+    .btn-cancel-scan:hover { background: #f0f0ee; }
+
+    /* ── Scan status ── */
+    .scan-status {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .scan-status.show { display: flex; }
+
+    .spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid var(--border);
+      border-top-color: var(--green);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
       flex-shrink: 0;
     }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
 
     /* ── Result ── */
     .result-box {
@@ -256,11 +351,7 @@
       margin-bottom: 2px;
     }
 
-    .result-value {
-      font-size: 16px;
-      font-weight: 500;
-      color: var(--text);
-    }
+    .result-value { font-size: 16px; font-weight: 500; color: var(--text); }
 
     /* ── Error ── */
     .error-box {
@@ -278,9 +369,7 @@
     .error-box.show { display: block; }
 
     /* ── How it works ── */
-    .how-section {
-      padding: 1.5rem 1rem 1rem;
-    }
+    .how-section { padding: 1.5rem 1rem 1rem; }
 
     .section-label {
       font-family: 'Space Mono', monospace;
@@ -292,12 +381,7 @@
     }
 
     .steps { display: flex; flex-direction: column; gap: 14px; }
-
-    .step {
-      display: flex;
-      gap: 12px;
-      align-items: flex-start;
-    }
+    .step { display: flex; gap: 12px; align-items: flex-start; }
 
     .step-num {
       width: 24px;
@@ -314,16 +398,8 @@
       margin-top: 1px;
     }
 
-    .step-text {
-      font-size: 13px;
-      color: var(--muted);
-      line-height: 1.55;
-    }
-
-    .step-text strong {
-      color: var(--text);
-      font-weight: 500;
-    }
+    .step-text { font-size: 13px; color: var(--muted); line-height: 1.55; }
+    .step-text strong { color: var(--text); font-weight: 500; }
 
     /* ── Footer ── */
     footer {
@@ -358,7 +434,7 @@
   <main>
     <div class="lookup-card">
       <h2>Gate ID lookup</h2>
-      <p class="sub">Enter the Gate ID printed on the slidegate label (starts with SG)</p>
+      <p class="sub">Type the Gate ID from the slidegate label, or tap Scan to use your camera.</p>
 
       <div class="input-row">
         <input
@@ -375,15 +451,39 @@
 
       <div class="or-divider">or</div>
 
-      <button class="btn-scan" onclick="alert('Camera scanning coming in a future update. For now, type the Gate ID above.')">
-        <svg class="scan-icon-svg" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <button class="btn-scan" id="btnScan" onclick="startScanner()">
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
           <rect x="2" y="2" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/>
           <rect x="13" y="2" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/>
           <rect x="2" y="13" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/>
-          <path d="M13 13h2v2h-2z M15 15h2v2h-2z M13 17h2v2h-2z M17 13h2v2h-2z" fill="currentColor"/>
-          <path d="M9 2v2M9 6v2M2 9h2M6 9h2M9 13v2M9 17v2M13 9h2M17 9h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          <rect x="13.5" y="13.5" width="1.5" height="1.5" fill="currentColor"/>
+          <rect x="16" y="13.5" width="1.5" height="1.5" fill="currentColor"/>
+          <rect x="13.5" y="16" width="1.5" height="1.5" fill="currentColor"/>
+          <rect x="16" y="16" width="1.5" height="1.5" fill="currentColor"/>
         </svg>
         Scan Gate ID label with camera
+      </button>
+
+      <!-- Camera viewfinder -->
+      <div class="scanner-wrap" id="scannerWrap">
+        <video id="scannerVideo" autoplay playsinline muted></video>
+        <canvas id="scannerCanvas" style="display:none"></canvas>
+        <div class="scanner-overlay">
+          <div class="scan-frame">
+            <span></span>
+            <div class="scan-line"></div>
+          </div>
+          <p class="scanner-hint">Point at the Gate ID QR code</p>
+        </div>
+      </div>
+
+      <div class="scan-status" id="scanStatus">
+        <div class="spinner"></div>
+        <span id="scanStatusText">Looking for QR code…</span>
+      </div>
+
+      <button class="btn-cancel-scan" id="btnCancelScan" onclick="stopScanner()">
+        Cancel scan
       </button>
 
       <div class="error-box" id="errorBox">
@@ -391,7 +491,7 @@
       </div>
 
       <div class="result-box" id="resultBox">
-        <div class="result-gate-badge" id="rGateId">SG01001091</div>
+        <div class="result-gate-badge" id="rGateId"></div>
         <div class="result-field">
           <div class="result-label">Brand</div>
           <div class="result-value" id="rBrand">—</div>
@@ -412,7 +512,7 @@
         </div>
         <div class="step">
           <div class="step-num">2</div>
-          <div class="step-text"><strong>Find the Gate ID</strong> — locate the label on your slidegate hardware (serial number starts with SG)</div>
+          <div class="step-text"><strong>Tap "Scan Gate ID label"</strong> — point your phone at the QR code on the slidegate, or type the SG number manually</div>
         </div>
         <div class="step">
           <div class="step-num">3</div>
@@ -430,60 +530,45 @@
 </div>
 
 <script>
-  /*
-   * ─────────────────────────────────────────────────────────────────────────
-   *  BOXIQ DATA SOURCE
-   *
-   *  PHASE 1 (current): Demo data hardcoded below for testing.
-   *
-   *  PHASE 2 (next step): Replace the DEMO_DATA object and fetchGateData()
-   *  function below with the Google Sheets version.
-   *
-   *  To switch to Google Sheets:
-   *  1. Publish your Google Sheet as CSV (File → Share → Publish to web → CSV)
-   *  2. Copy the URL it gives you
-   *  3. Replace SHEETS_CSV_URL below with your URL
-   *  4. Delete the DEMO_DATA section and update fetchGateData() to use
-   *     the parseCSV approach shown in the comments below
-   * ─────────────────────────────────────────────────────────────────────────
-   */
+  /* ═══════════════════════════════════════════════════════════════
+     DATA SOURCE
+     Phase 1 (now):  Demo data hardcoded below
+     Phase 2 (next): Connect to your Google Sheet — see comments
+  ═══════════════════════════════════════════════════════════════ */
 
-  // ── DEMO DATA (remove in Phase 2) ──────────────────────────────────────
   const DEMO_DATA = {
-    'SG01001091': { brand: 'Hybrid — DKC 58-64',       lot: 'LOT-2025-A-0042' },
-    'SG01001092': { brand: 'Hybrid — P1197AM',          lot: 'LOT-2025-B-0017' },
-    'SG01001093': { brand: 'Hybrid — NK Proven 19A11',  lot: 'LOT-2025-A-0093' },
+    'SG01001091': { brand: 'Hybrid — DKC 58-64',      lot: 'LOT-2025-A-0042' },
+    'SG01001092': { brand: 'Hybrid — P1197AM',         lot: 'LOT-2025-B-0017' },
+    'SG01001093': { brand: 'Hybrid — NK Proven 19A11', lot: 'LOT-2025-A-0093' },
   };
 
-  // ── GOOGLE SHEETS CONFIG (fill in for Phase 2) ─────────────────────────
-  // const SHEETS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSh1nMEHKWSZRoI8xQ_fyigc2hQZau3fELAelh4Bg5z2gxpRXweLxvPxptM1lsCowY45_AW2lQnSkt6/pub?gid=0&single=true&output=csv';
+  // PHASE 2: paste your Google Sheets CSV URL here and follow instructions below
+  // const SHEETS_CSV_URL = 'https://docs.google.com/spreadsheets/d/YOUR_ID/pub?output=csv';
 
   async function fetchGateData(gateId) {
-    // ── Phase 1: use live data ───────────────────────────────────────────
+    // Phase 1 — demo data
     return DEMO_DATA[gateId] || null;
 
-    // ── Phase 2: uncomment below and delete the line above ───────────────
+    // Phase 2 — delete the line above and uncomment:
     // try {
     //   const res = await fetch(SHEETS_CSV_URL);
     //   const csv = await res.text();
     //   const rows = csv.trim().split('\n').map(r => r.split(','));
-    //   const header = rows[0].map(h => h.trim().toLowerCase());
-    //   const gateCol  = header.indexOf('gate_id');
-    //   const brandCol = header.indexOf('brand');
-    //   const lotCol   = header.indexOf('lot');
-    //   const match = rows.slice(1).find(r => r[gateCol]?.trim().toUpperCase() === gateId);
-    //   if (!match) return null;
-    //   return { brand: match[brandCol]?.trim(), lot: match[lotCol]?.trim() };
-    // } catch(e) {
-    //   console.error('Sheet fetch failed:', e);
-    //   return null;
-    // }
+    //   const h = rows[0].map(c => c.trim().toLowerCase());
+    //   const gi = h.indexOf('gate_id'), bi = h.indexOf('brand'), li = h.indexOf('lot');
+    //   const row = rows.slice(1).find(r => r[gi]?.trim().toUpperCase() === gateId);
+    //   if (!row) return null;
+    //   return { brand: row[bi]?.trim(), lot: row[li]?.trim() };
+    // } catch(e) { console.error(e); return null; }
   }
 
-  // ── UI logic ────────────────────────────────────────────────────────────
-  const gateInput = document.getElementById('gateInput');
-  const resultBox = document.getElementById('resultBox');
-  const errorBox  = document.getElementById('errorBox');
+  /* ═══════════════════════════════════════════════════════════════
+     MANUAL LOOKUP
+  ═══════════════════════════════════════════════════════════════ */
+
+  const gateInput  = document.getElementById('gateInput');
+  const resultBox  = document.getElementById('resultBox');
+  const errorBox   = document.getElementById('errorBox');
 
   gateInput.addEventListener('input', () => {
     gateInput.value = gateInput.value.toUpperCase();
@@ -493,14 +578,14 @@
     if (e.key === 'Enter') doLookup();
   });
 
-  async function doLookup() {
-    const val = gateInput.value.trim().toUpperCase();
+  async function doLookup(overrideId) {
+    const val = (overrideId || gateInput.value).trim().toUpperCase();
     resultBox.classList.remove('show');
     errorBox.classList.remove('show');
     if (!val) return;
+    if (!overrideId) gateInput.value = val;
 
     const data = await fetchGateData(val);
-
     if (data) {
       document.getElementById('rGateId').textContent = val;
       document.getElementById('rBrand').textContent  = data.brand || '—';
@@ -509,6 +594,95 @@
     } else {
       errorBox.classList.add('show');
     }
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     CAMERA QR SCANNER
+     Uses jsQR to read frames from the phone's rear camera.
+     Works on iPhone Safari + Android Chrome — no app needed.
+     The phone will ask permission the first time.
+  ═══════════════════════════════════════════════════════════════ */
+
+  let videoStream   = null;
+  let scannerActive = false;
+  let animFrame     = null;
+
+  const scannerWrap   = document.getElementById('scannerWrap');
+  const scannerVideo  = document.getElementById('scannerVideo');
+  const scannerCanvas = document.getElementById('scannerCanvas');
+  const scanStatus    = document.getElementById('scanStatus');
+  const scanStatusTx  = document.getElementById('scanStatusText');
+  const btnCancelScan = document.getElementById('btnCancelScan');
+  const btnScan       = document.getElementById('btnScan');
+
+  async function startScanner() {
+    resultBox.classList.remove('show');
+    errorBox.classList.remove('show');
+
+    try {
+      videoStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 } }
+      });
+    } catch (err) {
+      alert('Camera permission required. Please allow access and try again.');
+      return;
+    }
+
+    scannerVideo.srcObject = videoStream;
+    scannerWrap.classList.add('active');
+    btnCancelScan.style.display = 'block';
+    btnScan.style.display = 'none';
+    scanStatus.classList.add('show');
+    scanStatusTx.textContent = 'Point at the Gate ID QR code…';
+    scannerActive = true;
+
+    scannerVideo.addEventListener('loadedmetadata', tickScan);
+  }
+
+  function tickScan() {
+    if (!scannerActive) return;
+    animFrame = requestAnimationFrame(tickScan);
+
+    const video = scannerVideo;
+    if (video.readyState !== video.HAVE_ENOUGH_DATA) return;
+
+    const canvas  = scannerCanvas;
+    canvas.width  = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const code = jsQR(imageData.data, imageData.width, imageData.height, {
+      inversionAttempts: 'dontInvert'
+    });
+
+    if (code && code.data) {
+      // Pull out SG-prefixed Gate ID whether it's plain text or embedded in a URL
+      const raw   = code.data.trim().toUpperCase();
+      const match = raw.match(/SG\d+/);
+      const gateId = match ? match[0] : raw;
+
+      if (gateId) {
+        stopScanner();
+        gateInput.value = gateId;
+        doLookup(gateId);
+      }
+    }
+  }
+
+  function stopScanner() {
+    scannerActive = false;
+    if (animFrame) cancelAnimationFrame(animFrame);
+    if (videoStream) {
+      videoStream.getTracks().forEach(t => t.stop());
+      videoStream = null;
+    }
+    scannerVideo.srcObject = null;
+    scannerWrap.classList.remove('active');
+    btnCancelScan.style.display = 'none';
+    btnScan.style.display = 'flex';
+    scanStatus.classList.remove('show');
   }
 </script>
 </body>
