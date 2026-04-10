@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BoxIQ — Seedbox Innovation</title>
+  <meta name="description" content="Look up seed brand and lot information by Gate ID" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Space+Mono&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green: #4a8c2a;
+      --green-light: #e8f5e0;
+      --green-mid: #82c455;
+      --bg: #f5f5f3;
+      --card: #ffffff;
+      --border: rgba(0,0,0,0.1);
+      --text: #1a1a1a;
+      --muted: #6b7280;
+      --faint: #9ca3af;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .page {
+      width: 100%;
+      max-width: 480px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Hero ── */
+    .hero {
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      padding: 2rem 1.5rem 1.5rem;
+      text-align: center;
+    }
+
+    .logo-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 0.5rem;
+    }
+
+    .logo-box {
+      width: 36px;
+      height: 36px;
+      border: 2.5px solid var(--text);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .leaf {
+      width: 14px;
+      height: 14px;
+      background: var(--green-mid);
+      clip-path: polygon(50% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+    }
+
+    .brand-name {
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .brand-name .accent { color: var(--green); }
+
+    .powered-tag {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      color: var(--faint);
+      margin-bottom: 1.25rem;
+      letter-spacing: 0.04em;
+    }
+
+    .hero h1 {
+      font-size: 19px;
+      font-weight: 500;
+      line-height: 1.35;
+      margin-bottom: 0.5rem;
+    }
+
+    .hero p {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.6;
+      max-width: 320px;
+      margin: 0 auto;
+    }
+
+    /* ── Lookup Card ── */
+    .lookup-card {
+      background: var(--card);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      padding: 1.5rem;
+      margin: 1.25rem 1rem 0;
+    }
+
+    .lookup-card h2 {
+      font-size: 15px;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+
+    .lookup-card .sub {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 1rem;
+      line-height: 1.5;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .input-row input {
+      flex: 1;
+      font-family: 'Space Mono', monospace;
+      font-size: 14px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #fafafa;
+      color: var(--text);
+      outline: none;
+      letter-spacing: 0.04em;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .input-row input:focus {
+      border-color: var(--green);
+      box-shadow: 0 0 0 3px rgba(74,140,42,0.12);
+    }
+
+    .input-row input::placeholder {
+      color: var(--faint);
+      font-family: 'DM Sans', sans-serif;
+      letter-spacing: normal;
+    }
+
+    .btn-lookup {
+      background: var(--green);
+      color: #fff;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      white-space: nowrap;
+      transition: background 0.15s, transform 0.1s;
+    }
+
+    .btn-lookup:hover { background: #3a7020; }
+    .btn-lookup:active { transform: scale(0.97); }
+
+    .or-divider {
+      text-align: center;
+      font-size: 12px;
+      color: var(--faint);
+      margin-bottom: 12px;
+      position: relative;
+    }
+
+    .or-divider::before,
+    .or-divider::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      width: 44%;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .or-divider::before { left: 0; }
+    .or-divider::after { right: 0; }
+
+    .btn-scan {
+      width: 100%;
+      background: #fafafa;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background 0.15s;
+    }
+
+    .btn-scan:hover { background: #f0f0ee; }
+
+    .scan-icon-svg {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+    }
+
+    /* ── Result ── */
+    .result-box {
+      display: none;
+      margin-top: 1rem;
+      background: #f7fbf4;
+      border-radius: 8px;
+      border-left: 3px solid var(--green);
+      padding: 1rem 1.125rem;
+    }
+
+    .result-box.show { display: block; }
+
+    .result-gate-badge {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      background: var(--green-light);
+      color: var(--green);
+      padding: 3px 8px;
+      border-radius: 4px;
+      display: inline-block;
+      margin-bottom: 0.875rem;
+      letter-spacing: 0.04em;
+    }
+
+    .result-field { margin-bottom: 0.75rem; }
+    .result-field:last-child { margin-bottom: 0; }
+
+    .result-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 2px;
+    }
+
+    .result-value {
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    /* ── Error ── */
+    .error-box {
+      display: none;
+      margin-top: 1rem;
+      background: #fef2f2;
+      border-left: 3px solid #e24b4a;
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      font-size: 13px;
+      color: #a32d2d;
+      line-height: 1.5;
+    }
+
+    .error-box.show { display: block; }
+
+    /* ── How it works ── */
+    .how-section {
+      padding: 1.5rem 1rem 1rem;
+    }
+
+    .section-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      color: var(--faint);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 1rem;
+    }
+
+    .steps { display: flex; flex-direction: column; gap: 14px; }
+
+    .step {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .step-num {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--green-light);
+      color: var(--green);
+      font-size: 12px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .step-text {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .step-text strong {
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    /* ── Footer ── */
+    footer {
+      margin-top: auto;
+      padding: 1.5rem 1rem;
+      text-align: center;
+      border-top: 1px solid var(--border);
+      background: var(--card);
+    }
+
+    footer p {
+      font-size: 11px;
+      color: var(--faint);
+      font-family: 'Space Mono', monospace;
+      line-height: 1.8;
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="hero">
+    <div class="logo-row">
+      <div class="logo-box"><div class="leaf"></div></div>
+      <span class="brand-name">seed<span class="accent">b</span>ox <span style="font-weight:400;opacity:.3">|</span> <span class="accent">BoxIQ</span></span>
+    </div>
+    <p class="powered-tag">powered by quarterpoint</p>
+    <h1>Track what's in your box</h1>
+    <p>Enter a Gate ID or scan its label to look up seed brand and lot information.</p>
+  </header>
+
+  <main>
+    <div class="lookup-card">
+      <h2>Gate ID lookup</h2>
+      <p class="sub">Enter the Gate ID printed on the slidegate label (starts with SG)</p>
+
+      <div class="input-row">
+        <input
+          type="text"
+          id="gateInput"
+          placeholder="e.g. SG01001091"
+          maxlength="20"
+          autocomplete="off"
+          autocorrect="off"
+          spellcheck="false"
+        />
+        <button class="btn-lookup" onclick="doLookup()">Look up</button>
+      </div>
+
+      <div class="or-divider">or</div>
+
+      <button class="btn-scan" onclick="alert('Camera scanning coming in a future update. For now, type the Gate ID above.')">
+        <svg class="scan-icon-svg" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="2" y="2" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/>
+          <rect x="13" y="2" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/>
+          <rect x="2" y="13" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M13 13h2v2h-2z M15 15h2v2h-2z M13 17h2v2h-2z M17 13h2v2h-2z" fill="currentColor"/>
+          <path d="M9 2v2M9 6v2M2 9h2M6 9h2M9 13v2M9 17v2M13 9h2M17 9h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        Scan Gate ID label with camera
+      </button>
+
+      <div class="error-box" id="errorBox">
+        Gate ID not found. Double-check the number on the label and try again.
+      </div>
+
+      <div class="result-box" id="resultBox">
+        <div class="result-gate-badge" id="rGateId">SG01001091</div>
+        <div class="result-field">
+          <div class="result-label">Brand</div>
+          <div class="result-value" id="rBrand">—</div>
+        </div>
+        <div class="result-field">
+          <div class="result-label">Batch / Lot</div>
+          <div class="result-value" id="rLot">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="how-section">
+      <p class="section-label">How it works</p>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-text"><strong>Scan the box sticker</strong> — open your phone camera and point it at the QR code on any Seedbox Innovation box</div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-text"><strong>Find the Gate ID</strong> — locate the label on your slidegate hardware (serial number starts with SG)</div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-text"><strong>View your results</strong> — see the seed brand (hybrid) and batch/lot number instantly</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <p>BoxIQ · Seedbox Innovation</p>
+    <p>powered by quarterpoint</p>
+  </footer>
+
+</div>
+
+<script>
+  /*
+   * ─────────────────────────────────────────────────────────────────────────
+   *  BOXIQ DATA SOURCE
+   *
+   *  PHASE 1 (current): Demo data hardcoded below for testing.
+   *
+   *  PHASE 2 (next step): Replace the DEMO_DATA object and fetchGateData()
+   *  function below with the Google Sheets version.
+   *
+   *  To switch to Google Sheets:
+   *  1. Publish your Google Sheet as CSV (File → Share → Publish to web → CSV)
+   *  2. Copy the URL it gives you
+   *  3. Replace SHEETS_CSV_URL below with your URL
+   *  4. Delete the DEMO_DATA section and update fetchGateData() to use
+   *     the parseCSV approach shown in the comments below
+   * ─────────────────────────────────────────────────────────────────────────
+   */
+
+  // ── DEMO DATA (remove in Phase 2) ──────────────────────────────────────
+  const DEMO_DATA = {
+    'SG01001091': { brand: 'Hybrid — DKC 58-64',       lot: 'LOT-2025-A-0042' },
+    'SG01001092': { brand: 'Hybrid — P1197AM',          lot: 'LOT-2025-B-0017' },
+    'SG01001093': { brand: 'Hybrid — NK Proven 19A11',  lot: 'LOT-2025-A-0093' },
+  };
+
+  // ── GOOGLE SHEETS CONFIG (fill in for Phase 2) ─────────────────────────
+  // const SHEETS_CSV_URL = 'https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/pub?output=csv';
+
+  async function fetchGateData(gateId) {
+    // ── Phase 1: use demo data ───────────────────────────────────────────
+    return DEMO_DATA[gateId] || null;
+
+    // ── Phase 2: uncomment below and delete the line above ───────────────
+    // try {
+    //   const res = await fetch(SHEETS_CSV_URL);
+    //   const csv = await res.text();
+    //   const rows = csv.trim().split('\n').map(r => r.split(','));
+    //   const header = rows[0].map(h => h.trim().toLowerCase());
+    //   const gateCol  = header.indexOf('gate_id');
+    //   const brandCol = header.indexOf('brand');
+    //   const lotCol   = header.indexOf('lot');
+    //   const match = rows.slice(1).find(r => r[gateCol]?.trim().toUpperCase() === gateId);
+    //   if (!match) return null;
+    //   return { brand: match[brandCol]?.trim(), lot: match[lotCol]?.trim() };
+    // } catch(e) {
+    //   console.error('Sheet fetch failed:', e);
+    //   return null;
+    // }
+  }
+
+  // ── UI logic ────────────────────────────────────────────────────────────
+  const gateInput = document.getElementById('gateInput');
+  const resultBox = document.getElementById('resultBox');
+  const errorBox  = document.getElementById('errorBox');
+
+  gateInput.addEventListener('input', () => {
+    gateInput.value = gateInput.value.toUpperCase();
+  });
+
+  gateInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') doLookup();
+  });
+
+  async function doLookup() {
+    const val = gateInput.value.trim().toUpperCase();
+    resultBox.classList.remove('show');
+    errorBox.classList.remove('show');
+    if (!val) return;
+
+    const data = await fetchGateData(val);
+
+    if (data) {
+      document.getElementById('rGateId').textContent = val;
+      document.getElementById('rBrand').textContent  = data.brand || '—';
+      document.getElementById('rLot').textContent    = data.lot   || '—';
+      resultBox.classList.add('show');
+    } else {
+      errorBox.classList.add('show');
+    }
+  }
+</script>
+</body>
+</html>
