@@ -58,21 +58,10 @@
       margin-bottom: 0.5rem;
     }
 
-    .logo-box {
-      width: 36px;
-      height: 36px;
-      border: 2.5px solid var(--text);
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .leaf {
-      width: 14px;
-      height: 14px;
-      background: var(--green-mid);
-      clip-path: polygon(50% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+    .logo-img {
+      width: 42px;
+      height: 42px;
+      object-fit: contain;
     }
 
     .brand-name { font-size: 22px; font-weight: 600; color: var(--text); }
@@ -353,6 +342,29 @@
 
     .result-value { font-size: 16px; font-weight: 500; color: var(--text); }
 
+    .btn-search-hybrid {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      width: 100%;
+      margin-top: 1rem;
+      padding: 10px 14px;
+      background: #fff;
+      border: 1.5px solid var(--green);
+      border-radius: 8px;
+      color: var(--green);
+      font-size: 13px;
+      font-weight: 500;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+
+    .btn-search-hybrid:hover { background: var(--green-light); }
+    .btn-search-hybrid:active { transform: scale(0.97); }
+
     /* ── Error ── */
     .error-box {
       display: none;
@@ -423,10 +435,10 @@
 
   <header class="hero">
     <div class="logo-row">
-      <div class="logo-box"><div class="leaf"></div></div>
+      <img class="logo-img" src="seed_logo.jpg" alt="Seedbox logo" />
       <span class="brand-name">seed<span class="accent">b</span>ox <span style="font-weight:400;opacity:.3">|</span> <span class="accent">BoxIQ</span></span>
     </div>
-    <p class="powered-tag">powered by quarterpoint</p>
+    <p class="powered-tag">powered by Seedbox Solution</p>
     <h1>Track what's in your box</h1>
     <p>Enter a Gate ID or scan its label to look up seed brand and lot information.</p>
   </header>
@@ -500,6 +512,13 @@
           <div class="result-label">Batch / Lot</div>
           <div class="result-value" id="rLot">—</div>
         </div>
+        <a id="btnSearchHybrid" class="btn-search-hybrid" href="#" target="_blank" rel="noopener">
+          <svg width="15" height="15" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="9" cy="9" r="6" stroke="currentColor" stroke-width="1.75"/>
+            <path d="M13.5 13.5L18 18" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+          </svg>
+          Search for this hybrid online
+        </a>
       </div>
     </div>
 
@@ -524,7 +543,7 @@
 
   <footer>
     <p>BoxIQ · Seedbox Innovation</p>
-    <p>powered by quarterpoint</p>
+    <p>powered by Seedbox Solution</p>
   </footer>
 
 </div>
@@ -579,6 +598,13 @@
       document.getElementById('rGateId').textContent = val;
       document.getElementById('rBrand').textContent  = data.brand || '—';
       document.getElementById('rLot').textContent    = data.lot   || '—';
+
+      // Build a targeted Google search for the hybrid — strips "Hybrid — " prefix if present
+      const hybridName = (data.brand || '').replace(/^hybrid\s*[—-]\s*/i, '').trim();
+      const searchQuery = encodeURIComponent(hybridName + ' seed hybrid product specs');
+      document.getElementById('btnSearchHybrid').href =
+        'https://www.google.com/search?q=' + searchQuery;
+
       resultBox.classList.add('show');
     } else {
       errorBox.classList.add('show');
