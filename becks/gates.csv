@@ -1,0 +1,4 @@
+gate_id,brand,batch_lot,seed_size,treatment,loaded_on,box_id,filled_by,notes
+SG01002001,Beck's 5828 XLA,LOT-5828-11C,Round Medium Flat,Escalate Yield Enhancer,2026-04-28,BOX-3301,T. Klein,
+SG01002002,Beck's 6175 V2P,LOT-6175-04B,Flat Large,Escalate + CRW,2026-04-29,BOX-3302,T. Klein,Demo plot delivery
+SG01002003,Beck's 3392 E3 Soybean,LOT-3392-22A,,Escalate SDS,2026-05-01,BOX-3303,R. Sandoval,Treated soybean - do not feed

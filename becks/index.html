@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BoxIQ for Beck's</title>
+<meta name="description" content="Scan a slidegate Gate ID to see the seed brand and batch/lot in the box. BoxIQ by Seedbox Solution, prepared for Beck's.">
+<meta property="og:title" content="BoxIQ for Beck's">
+<meta property="og:description" content="Track what's in your box — scan the gate, see the seed.">
+
+<!-- TODO: swap in Beck's real hex values. -->
+<style>
+  :root{
+    --accent:#1B4E8C;
+    --accent-deep:#123A6B;
+    --on-accent:#F2F2EE;
+  }
+</style>
+<meta name="theme-color" content="#1F211E">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/boxiq-v1.css">
+</head>
+<body>
+<div id="boxiq"></div>
+<script type="application/json" id="boxiq-config">
+{
+  "client": "Beck's",
+  "logo": "becks-logo.png",
+  "preparedFor": "Prepared for Beck's · July 2026",
+  "dataUrl": "gates.csv",
+  "demoData": true,
+  "supportNote": "Contact your Beck's seed advisor.",
+  "footerNote": "BoxIQ by Seedbox Solution · prepared with Beck's for evaluation"
+}
+</script>
+<script src="../assets/boxiq-v1.js"></script>
+</body>
+</html>

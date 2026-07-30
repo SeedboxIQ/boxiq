@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BoxIQ for Aurora Cooperative</title>
+<meta name="description" content="Scan a slidegate Gate ID to see the seed brand and batch/lot in the box. BoxIQ by Seedbox Solution, prepared for Aurora Cooperative.">
+<meta property="og:title" content="BoxIQ for Aurora Cooperative">
+<meta property="og:description" content="Track what's in your box — scan the gate, see the seed.">
+
+<!-- ===== Aurora's colours. These three lines are the whole visual co-brand. =====
+     --accent      the client's primary colour: buttons, tag rule, focus ring
+     --accent-deep a darker shade of it, for small text and the tie line
+     --on-accent   text colour that sits on --accent (#1F211E on light, #F2F2EE on dark)
+     TODO: replace the placeholders below with Aurora's real hex values. -->
+<style>
+  :root{
+    --accent:#17603C;
+    --accent-deep:#0E4429;
+    --on-accent:#F2F2EE;
+  }
+</style>
+<meta name="theme-color" content="#1F211E">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/boxiq-v1.css">
+</head>
+<body>
+<div id="boxiq"></div>
+
+<!-- ===== Aurora's wording and data. Everything else comes from the shared engine. =====
+     logo        file saved in THIS folder, e.g. "aurora-logo.png". Leave "" to show the
+                 name as text; a missing file also falls back to the name.
+     dataUrl     "gates.csv" in this folder, or a published Google Sheet CSV link.
+     demoData    true puts a "Demo data" flag in the header so nobody mistakes the
+                 sample rows for their live records. Set to false for a real pilot. -->
+<script type="application/json" id="boxiq-config">
+{
+  "client": "Aurora Cooperative",
+  "logo": "aurora-logo.png",
+  "preparedFor": "Prepared for Aurora Cooperative · July 2026",
+  "lede": "Every slidegate has its own <strong>Gate ID</strong>. Scan the QR code on the gate label, or key in the digits printed under it, to see the seed brand and batch/lot Aurora loaded in that box.",
+  "dataUrl": "gates.csv",
+  "demoData": true,
+  "steps": [
+    "Scan the QR code on the box sticker — that opens BoxIQ.",
+    "Scan or type the Gate ID from the slidegate label.",
+    "BoxIQ shows the brand, batch/lot, and which Aurora location filled it."
+  ],
+  "supportNote": "Contact your Aurora Cooperative agronomist or seed location.",
+  "footerNote": "BoxIQ by Seedbox Solution · prepared with Aurora Cooperative for evaluation"
+}
+</script>
+<script src="../assets/boxiq-v1.js"></script>
+</body>
+</html>

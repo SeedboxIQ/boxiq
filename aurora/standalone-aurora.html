@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BoxIQ for Aurora Cooperative</title>
+<meta name="description" content="Scan a slidegate Gate ID to see the seed brand and batch/lot in the box. BoxIQ by Seedbox Solution, prepared for Aurora Cooperative.">
+<meta property="og:title" content="BoxIQ for Aurora Cooperative">
+<meta property="og:description" content="Track what's in your box — scan the gate, see the seed.">
+
+<!-- ===== Aurora's colours. These three lines are the whole visual co-brand. =====
+     --accent      the client's primary colour: buttons, tag rule, focus ring
+     --accent-deep a darker shade of it, for small text and the tie line
+     --on-accent   text colour that sits on --accent (#1F211E on light, #F2F2EE on dark)
+     TODO: replace the placeholders below with Aurora's real hex values. -->
+<style>
+  :root{
+    --accent:#17603C;
+    --accent-deep:#0E4429;
+    --on-accent:#F2F2EE;
+  }
+</style>
+<meta name="theme-color" content="#1F211E">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   BoxIQ v1 — shared stylesheet
+   Every client site loads this file. Do not edit it to change
+   one client's look: override the variables in that client's
+   index.html instead. Breaking changes go in boxiq-v2.css so
+   live prospect demos can never shift under them.
+   ============================================================ */
+:root{
+  /* Seedbox marks — fixed across every co-brand */
+  --seed:#8FB53C;
+  --seed-deep:#5A7A1E;
+  /* Client accent — override per client. Defaults to Seedbox green. */
+  --accent:var(--seed);
+  --accent-deep:var(--seed-deep);
+  --on-accent:#1F211E;        /* text that sits on the accent colour */
+  /* Surfaces, sampled from the Gen2 sticker and slidegate hardware */
+  --ink:#1F211E;
+  --ink-soft:#4A4E48;
+  --plate:#F2F2EE;
+  --steel:#6E7472;
+  --steel-line:#C9CBC5;
+  --alert:#A93A22;
+  --page:#E4E5E0;
+  --radius:4px;
+  --shadow:0 1px 0 rgba(31,33,30,.14), 0 10px 24px -14px rgba(31,33,30,.5);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--page);
+  background-image:repeating-linear-gradient(90deg,
+    rgba(31,33,30,.045) 0 1px, rgba(255,255,255,.5) 1px 2px, transparent 2px 14px);
+  color:var(--ink);
+  font-family:'Archivo',system-ui,-apple-system,'Segoe UI',sans-serif;
+  -webkit-text-size-adjust:100%;
+  min-height:100dvh;
+}
+.wrap{max-width:540px;margin:0 auto;padding:0 18px 56px}
+
+/* ---------- co-brand header ---------- */
+.topbar{background:var(--ink);color:var(--plate);padding:13px 0}
+.topbar .wrap{padding-bottom:0}
+.lockup{display:flex;align-items:center;gap:13px;flex-wrap:wrap}
+.mark{font-weight:700;font-size:20px;letter-spacing:-.03em;white-space:nowrap}
+.mark .sprout{color:var(--seed)}
+.mark .dot{color:var(--steel);padding:0 2px}
+.divider{width:1px;height:22px;background:rgba(242,242,238,.3);flex:none}
+.client{display:flex;align-items:center;gap:9px;min-width:0}
+.client img{max-height:26px;max-width:170px;width:auto;display:block}
+.client .name{font-weight:600;font-size:16px;letter-spacing:-.01em;color:var(--plate)}
+.prepared{
+  font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10.5px;
+  letter-spacing:.15em;text-transform:uppercase;color:#9BA09A;margin-top:9px;
+}
+.eyebrow{
+  font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10.5px;
+  letter-spacing:.18em;text-transform:uppercase;color:#9BA09A;
+}
+.demo-flag{
+  display:inline-block;margin-left:8px;padding:3px 7px;border-radius:2px;
+  background:var(--alert);color:#fff;font-family:'IBM Plex Mono',monospace;
+  font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;vertical-align:2px;
+}
+.lede{margin:26px 0 22px;font-size:15.5px;line-height:1.5;color:var(--ink-soft);max-width:34em}
+.lede strong{color:var(--ink);font-weight:600}
+
+/* ---------- the plate: input styled as the slidegate label ---------- */
+.field-label{
+  display:block;font-family:'IBM Plex Mono',monospace;font-size:11px;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:9px;
+}
+.plate{position:relative;background:var(--ink);border-radius:6px;padding:7px;box-shadow:var(--shadow)}
+.plate-inner{
+  position:relative;background:var(--plate);border-radius:var(--radius);
+  display:flex;align-items:center;gap:2px;padding:14px 34px;
+}
+.rivet{
+  position:absolute;top:50%;transform:translateY(-50%);width:13px;height:13px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%, #fff 0 18%, #B9BCB6 55%, #7E837C 100%);
+  box-shadow:inset 0 0 0 1px rgba(31,33,30,.25);
+}
+.rivet.l{left:11px} .rivet.r{right:11px}
+.prefix{
+  font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:26px;
+  color:var(--steel);letter-spacing:.06em;padding-right:6px;
+}
+#gateDigits{
+  flex:1;min-width:0;border:0;background:transparent;padding:0;
+  font-family:'IBM Plex Mono',monospace;font-weight:500;font-size:26px;
+  letter-spacing:.14em;color:var(--ink);
+}
+#gateDigits::placeholder{color:#B4B8B1;letter-spacing:.14em}
+#gateDigits:focus{outline:none}
+.plate:focus-within{box-shadow:0 0 0 3px var(--accent), var(--shadow)}
+
+.actions{display:flex;gap:9px;margin-top:13px}
+.btn{
+  font-family:inherit;font-size:15px;font-weight:600;border-radius:var(--radius);
+  border:1.5px solid var(--ink);padding:14px 16px;cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:52px;
+}
+.btn-primary{background:var(--accent);color:var(--on-accent);flex:1 1 58%}
+.btn-ghost{background:transparent;color:var(--ink);flex:1 1 42%}
+.btn:active{transform:translateY(1px)}
+.btn:focus-visible{outline:3px solid var(--accent-deep);outline-offset:2px}
+.btn svg{width:19px;height:19px;flex:none}
+
+.status{margin-top:14px;font-size:13px;line-height:1.45;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace}
+.status[data-tone="warn"]{color:var(--alert)}
+
+/* ---------- result: a seed tag tied to the gate ---------- */
+.tie{display:none;height:26px;margin-left:30px;border-left:2px solid var(--accent-deep)}
+.tag{
+  display:none;position:relative;background:#fff;border-radius:var(--radius);
+  border:1px solid var(--steel-line);border-top:5px solid var(--accent);
+  padding:22px 20px 18px;box-shadow:var(--shadow);
+}
+.tag.show,.tie.show{display:block}
+.tag.show{animation:drop .26s cubic-bezier(.2,.9,.3,1) both}
+@keyframes drop{from{opacity:0;transform:translateY(-10px) rotate(-.6deg)}to{opacity:1;transform:none}}
+.punch{
+  position:absolute;top:-3px;left:24px;width:13px;height:13px;border-radius:50%;
+  background:var(--page);box-shadow:inset 0 1px 2px rgba(31,33,30,.4);
+}
+.tag .gate{font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft)}
+.tag h2{margin:6px 0 0;font-size:29px;line-height:1.12;letter-spacing:-.025em;font-weight:700}
+.lot{margin-top:16px;padding-top:14px;border-top:1px solid var(--steel-line)}
+.lot .k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft)}
+.lot .v{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:24px;letter-spacing:.02em;margin-top:3px;word-break:break-all}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 16px;margin-top:16px}
+.grid .k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft)}
+.grid .v{font-size:15px;font-weight:500;margin-top:2px;line-height:1.35}
+.grid .wide{grid-column:1 / -1}
+details.history{margin-top:18px;border-top:1px solid var(--steel-line);padding-top:12px}
+details.history summary{
+  font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--accent-deep);cursor:pointer;
+}
+details.history ul{margin:10px 0 0;padding-left:18px;font-size:14px;line-height:1.6;color:var(--ink-soft)}
+.tag.miss{border-top-color:var(--alert)}
+.tag.miss h2{font-size:21px}
+.tag.miss p{margin:10px 0 0;font-size:14.5px;line-height:1.55;color:var(--ink-soft)}
+
+/* ---------- how it works ---------- */
+.how{margin-top:40px;border-top:1px solid var(--steel-line);padding-top:22px}
+.how h3{
+  font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--ink-soft);margin:0 0 14px;font-weight:500;
+}
+.how ol{list-style:none;margin:0;padding:0;counter-reset:s}
+.how li{
+  counter-increment:s;display:flex;gap:13px;padding:11px 0;font-size:14.5px;line-height:1.5;
+  border-bottom:1px solid rgba(201,203,197,.6);
+}
+.how li:last-child{border-bottom:0}
+.how li::before{
+  content:counter(s,decimal-leading-zero);
+  font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent-deep);padding-top:3px;flex:none;
+}
+footer{
+  margin-top:30px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--steel);line-height:1.7;
+}
+
+/* ---------- scanner ---------- */
+.scanner{position:fixed;inset:0;background:#0D0F0D;z-index:50;display:none;flex-direction:column;align-items:center;justify-content:center}
+.scanner.open{display:flex}
+.scanner video{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
+.reticle{position:relative;width:min(72vw,290px);aspect-ratio:1;border-radius:10px;box-shadow:0 0 0 100vmax rgba(13,15,13,.62);outline:2px solid var(--accent)}
+.scan-hint{position:absolute;bottom:calc(28px + env(safe-area-inset-bottom));left:0;right:0;text-align:center;color:#EDEEE9;font-size:14px;padding:0 24px;line-height:1.5}
+.scan-close{
+  position:absolute;top:calc(14px + env(safe-area-inset-top));right:14px;
+  background:rgba(242,242,238,.14);color:#F2F2EE;border:1px solid rgba(242,242,238,.45);
+  border-radius:var(--radius);padding:11px 15px;font:600 14px/1 'Archivo',sans-serif;cursor:pointer;
+}
+@media (prefers-reduced-motion: reduce){
+  .tag.show{animation:none}
+  .btn:active{transform:none}
+}
+
+</style>
+</head>
+<body>
+<div id="boxiq"></div>
+
+<!-- ===== Aurora's wording and data. Everything else comes from the shared engine. =====
+     logo        file saved in THIS folder, e.g. "aurora-logo.png". Leave "" to show the
+                 name as text; a missing file also falls back to the name.
+     dataUrl     "gates.csv" in this folder, or a published Google Sheet CSV link.
+     demoData    true puts a "Demo data" flag in the header so nobody mistakes the
+                 sample rows for their live records. Set to false for a real pilot. -->
+<script type="application/json" id="boxiq-config">
+{
+  "client": "Aurora Cooperative",
+  "logo": "aurora-logo.png",
+  "preparedFor": "Prepared for Aurora Cooperative \u00b7 July 2026",
+  "lede": "Every slidegate has its own <strong>Gate ID</strong>. Scan the QR code on the gate label, or key in the digits printed under it, to see the seed brand and batch/lot Aurora loaded in that box.",
+  "demoData": true,
+  "steps": [
+    "Scan the QR code on the box sticker \u2014 that opens BoxIQ.",
+    "Scan or type the Gate ID from the slidegate label.",
+    "BoxIQ shows the brand, batch/lot, and which Aurora location filled it."
+  ],
+  "supportNote": "Contact your Aurora Cooperative agronomist or seed location.",
+  "footerNote": "BoxIQ by Seedbox Solution \u00b7 prepared with Aurora Cooperative for evaluation",
+  "inlineData": "gate_id,brand,batch_lot,seed_size,treatment,loaded_on,box_id,location,grower,filled_by,notes\nSG01001091,Northstar 5822 VT2P,LOT-4471-22B,Round Medium Flat,LumaShield CRW,2026-05-02,BOX-2117,Aurora - Main,Hoffman Farms,J. Reyes,Planter 1 north tank\nSG01001091,Northstar 5610 SSX,LOT-2208-14A,Round Medium,LumaShield 250,2025-04-18,BOX-2117,Aurora - Main,Hoffman Farms,J. Reyes,Previous season load\nSG01001092,Northstar 5822 VT2P,LOT-4471-22B,Round Medium Flat,LumaShield CRW,2026-05-02,BOX-2118,Aurora - Main,Hoffman Farms,J. Reyes,\nSG01001093,Cardinal C64-34 SSTX,LOT-9902-08A,Flat Large,LumaShield CRW + Poncho,2026-05-04,BOX-2119,Bradshaw,Vanek Bros,M. Ottoway,Refuge blend\nSG01001094,Prairie AG38XF1 Soybean,LOT-7715-03C,,Acceleron B-300,2026-05-06,BOX-2120,Bradshaw,Vanek Bros,M. Ottoway,Treated soybean - do not feed\nSG01001095,Cardinal C58-12 VT2P,LOT-9871-45D,Round Medium,LumaShield 500,2026-05-07,BOX-2121,Hampton,Sedlacek Farms,A. Bell,\nSG01001096,Northstar 5915 PWE,LOT-4482-19F,Flat Medium,LumaShield CRW,2026-05-09,BOX-2122,Hampton,Sedlacek Farms,A. Bell,Split load - see delivery ticket\n"
+}
+</script>
+<script>
+/* ============================================================
+   BoxIQ v1 — shared engine
+   ------------------------------------------------------------
+   Every client site loads this one file and passes its own
+   settings in a JSON block with id="boxiq-config". Nothing in
+   here is client specific, so a fix here reaches every site at once.
+
+   Changing behaviour for one client? Add a config option.
+   Breaking change? Copy this to boxiq-v2.js and point new
+   sites at that, so demos already sent out keep working.
+   ============================================================ */
+(function(){
+'use strict';
+
+const DEFAULTS = {
+  client: '',                 // co-brand partner, e.g. "Aurora Cooperative"
+  logo: '',                   // path to their logo, relative to the client folder
+  preparedFor: '',            // small line under the lockup
+  tagline: "Track what's in your box",
+  lede: "Every slidegate has its own <strong>Gate ID</strong>. Scan the QR code on the gate label, or key in the digits printed under it, to see the seed brand and batch/lot loaded in this box.",
+  dataUrl: 'gates.csv',       // resolved relative to the client folder
+  demoData: false,            // true shows a "demo data" flag in the header
+  supportNote: 'Ask the person who filled the box, or contact Seedbox Solution.',
+  footerNote: 'BoxIQ · powered by Seedbox Solution',
+  steps: [
+    'Scan the QR code on the box sticker — that opens BoxIQ.',
+    'Scan or type the Gate ID from the slidegate label.',
+    'BoxIQ shows the brand and batch/lot recorded for that gate.'
+  ],
+  idPrefix: 'SG',
+  idDigits: 8,
+  cacheBustMinutes: 5,
+  sampleFallback: '',         // optional CSV string used only if dataUrl fails
+  inlineData: ''              // CSV/JSON carried inside the page: no fetch, works with no signal
+};
+
+let CONFIG = DEFAULTS;
+const cfgEl = document.getElementById('boxiq-config');
+if(cfgEl){
+  try{ CONFIG = Object.assign({}, DEFAULTS, JSON.parse(cfgEl.textContent)); }
+  catch(e){ console.error('BoxIQ: config block is not valid JSON', e); }
+}
+
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const el = id => document.getElementById(id);
+
+/* ---------- markup ---------- */
+function render(){
+  const clientBlock = CONFIG.client ? `
+      <span class="divider" aria-hidden="true"></span>
+      <span class="client">
+        ${CONFIG.logo
+          ? `<img src="${esc(CONFIG.logo)}" alt="${esc(CONFIG.client)}">`
+          : `<span class="name">${esc(CONFIG.client)}</span>`}
+      </span>` : '';
+
+  const mount = el('boxiq') || document.body;
+  mount.innerHTML = `
+  <div class="topbar">
+    <div class="wrap">
+      <div class="lockup">
+        <span class="mark">seedb<span class="sprout">o</span>x<span class="dot">·</span>BoxIQ</span>
+        ${clientBlock}
+      </div>
+      <div class="${CONFIG.preparedFor ? 'prepared' : 'eyebrow'}" style="margin-top:9px">
+        ${esc(CONFIG.preparedFor || CONFIG.tagline)}${CONFIG.demoData ? '<span class="demo-flag">Demo data</span>' : ''}
+      </div>
+    </div>
+  </div>
+
+  <main class="wrap">
+    <p class="lede">${CONFIG.lede}</p>
+
+    <label class="field-label" for="gateDigits">Gate ID</label>
+    <div class="plate">
+      <div class="plate-inner">
+        <span class="rivet l" aria-hidden="true"></span>
+        <span class="prefix" aria-hidden="true">${esc(CONFIG.idPrefix)}</span>
+        <input id="gateDigits" inputmode="numeric" autocomplete="off" spellcheck="false"
+               enterkeyhint="search" placeholder="${'0'.repeat(Math.max(0, CONFIG.idDigits - 7))}1001091"
+               aria-describedby="status">
+        <span class="rivet r" aria-hidden="true"></span>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" id="scanBtn" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3"/>
+          <path d="M3 12h18"/>
+        </svg>
+        Scan gate label
+      </button>
+      <button class="btn btn-ghost" id="lookupBtn" type="button">Look up</button>
+    </div>
+
+    <p class="status" id="status" role="status" aria-live="polite">Loading gate list…</p>
+
+    <div class="tie" id="tie" aria-hidden="true"></div>
+    <section class="tag" id="tag" aria-live="polite"></section>
+
+    <section class="how">
+      <h3>How it works</h3>
+      <ol>${CONFIG.steps.map(s=>`<li>${esc(s)}</li>`).join('')}</ol>
+    </section>
+
+    <footer id="foot">${esc(CONFIG.footerNote)}</footer>
+  </main>
+
+  <div class="scanner" id="scanner" role="dialog" aria-modal="true" aria-label="Scan gate label">
+    <video id="video" playsinline muted></video>
+    <div class="reticle"></div>
+    <p class="scan-hint" id="scanHint">Hold the QR code on the gate label inside the frame.</p>
+    <button class="scan-close" id="scanClose" type="button">Close</button>
+  </div>`;
+}
+
+/* ---------- tiny CSV reader (handles quoted fields) ---------- */
+function parseCSV(text){
+  const rows=[]; let row=[], field='', inQuotes=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(inQuotes){
+      if(c==='"'){ if(text[i+1]==='"'){field+='"';i++;} else inQuotes=false; }
+      else field+=c;
+    }else{
+      if(c==='"') inQuotes=true;
+      else if(c===','){ row.push(field); field=''; }
+      else if(c==='\n'){ row.push(field); rows.push(row); row=[]; field=''; }
+      else if(c!=='\r') field+=c;
+    }
+  }
+  row.push(field); rows.push(row);
+  return rows.filter(r=>r.some(v=>String(v).trim()!==''));
+}
+const key = s => String(s).trim().toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
+
+function toRecords(text){
+  const trimmed = text.trim();
+  if(trimmed.startsWith('[')||trimmed.startsWith('{')){
+    const json = JSON.parse(trimmed);
+    const arr = Array.isArray(json) ? json : (json.gates||json.records||json.data||[]);
+    return arr.map(o=>{ const r={}; for(const k in o) r[key(k)] = String(o[k] == null ? '' : o[k]).trim(); return r; });
+  }
+  const rows = parseCSV(trimmed);
+  if(!rows.length) return [];
+  const head = rows[0].map(key);
+  return rows.slice(1).map(cells=>{
+    const r={}; head.forEach((h,i)=> r[h] = String(cells[i] == null ? '' : cells[i]).trim()); return r;
+  });
+}
+
+/* ---------- Gate ID normalising ----------
+   Accepts: SG01001091 · sg 01001091 · 01001091 · 1001091 · a full URL
+   with ?gate= · and the glare-prone characters on a printed label. */
+function normalizeGateId(raw){
+  if(raw==null) return '';
+  let s = String(raw).trim();
+  const param = s.match(/[?&#](?:gate|g|id)=([^&\s]+)/i);
+  if(param) s = decodeURIComponent(param[1]);
+  s = s.toUpperCase().replace(/[^A-Z0-9]/g,'');
+  const found = s.match(new RegExp(CONFIG.idPrefix + '[A-Z0-9]+'));
+  if(found) s = found[0];
+  let tail = s.startsWith(CONFIG.idPrefix) ? s.slice(CONFIG.idPrefix.length) : s;
+  tail = tail.replace(/O/g,'0').replace(/[IL]/g,'1').replace(/S/g,'5').replace(/B/g,'8');
+  if(/^\d+$/.test(tail) && tail.length < CONFIG.idDigits) tail = tail.padStart(CONFIG.idDigits,'0');
+  return tail ? CONFIG.idPrefix + tail : '';
+}
+function isGateId(id){
+  return new RegExp('^' + CONFIG.idPrefix + '\\d{4,12}$').test(id);
+}
+
+/* ---------- state ---------- */
+const index = new Map();   // normalised gate id -> loads, newest first
+let usingSample = false;
+const cacheKey = 'boxiq.gates.' + location.pathname;
+
+function buildIndex(records){
+  index.clear();
+  let count = 0;
+  for(const r of records){
+    const id = normalizeGateId(r.gate_id || r.gateid || r.gate || r.id);
+    const brand = r.brand || r.hybrid || r.seed_brand || r.variety;
+    if(!id || !brand) continue;
+    if(!index.has(id)) index.set(id, []);
+    index.get(id).push(r);
+    count++;
+  }
+  for(const loads of index.values()){
+    loads.sort((a,b)=> String(b.loaded_on||b.date_loaded||'').localeCompare(String(a.loaded_on||a.date_loaded||'')));
+  }
+  return count;
+}
+
+function setStatus(msg, tone){
+  const s = el('status');
+  s.textContent = msg;
+  if(tone) s.setAttribute('data-tone',tone); else s.removeAttribute('data-tone');
+}
+
+async function loadData(){
+  if(CONFIG.inlineData){
+    const n = buildIndex(toRecords(CONFIG.inlineData));
+    setStatus(`${n} gates loaded · offline copy carried in this page`);
+    return;
+  }
+  const bust = Math.floor(Date.now() / (CONFIG.cacheBustMinutes*60000));
+  const url = CONFIG.dataUrl + (CONFIG.dataUrl.includes('?') ? '&' : '?') + 'v=' + bust;
+  try{
+    const res = await fetch(url, {cache:'no-store'});
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    const n = buildIndex(toRecords(text));
+    if(!n) throw new Error('no usable rows');
+    try{ localStorage.setItem(cacheKey, JSON.stringify({saved:Date.now(), text})); }catch(e){}
+    setStatus(`${n} gates loaded · list current as of ${new Date().toLocaleDateString()}`);
+  }catch(err){
+    let cached = null;
+    try{ cached = JSON.parse(localStorage.getItem(cacheKey)||'null'); }catch(e){}
+    if(cached && cached.text){
+      const n = buildIndex(toRecords(cached.text));
+      setStatus(`Offline. Using the copy saved on this device (${new Date(cached.saved).toLocaleDateString()}) · ${n} gates.`,'warn');
+    }else if(CONFIG.sampleFallback){
+      buildIndex(toRecords(CONFIG.sampleFallback));
+      usingSample = true;
+      setStatus(`Sample rows only — ${CONFIG.dataUrl} could not be read.`,'warn');
+    }else{
+      setStatus(`Can't read ${CONFIG.dataUrl}. Check that the file is published, then reload.`,'warn');
+    }
+  }
+}
+
+/* ---------- rendering a result ---------- */
+const LABELS = {
+  seed_size:'Seed size', treatment:'Treatment', loaded_on:'Loaded', date_loaded:'Loaded',
+  box_id:'Box', filled_by:'Filled by', bags:'Bags', units:'Units', field:'Field',
+  location:'Location', grower:'Grower', notes:'Notes'
+};
+
+function showResult(id){
+  const tag = el('tag'), tie = el('tie');
+  const loads = index.get(id);
+  tag.classList.remove('show','miss'); tie.classList.remove('show');
+  void tag.offsetWidth; // restart the drop animation
+
+  if(!loads){
+    tag.innerHTML = `
+      <span class="punch" aria-hidden="true"></span>
+      <p class="gate">${esc(id)}</p>
+      <h2>No load recorded for this gate</h2>
+      <p>Check the digits printed under the QR code — the label reads ${esc(CONFIG.idPrefix)}
+      followed by ${CONFIG.idDigits} digits. If the print is worn, scan the QR code instead.
+      ${esc(CONFIG.supportNote)}</p>`;
+    tag.classList.add('miss');
+  }else{
+    const cur = loads[0];
+    const brand = cur.brand || cur.hybrid || cur.seed_brand || cur.variety;
+    const lot = cur.batch_lot || cur.lot || cur.batch || cur.lot_number || '—';
+    const extras = Object.keys(LABELS)
+      .filter(k => cur[k])
+      .map(k => `<div class="${k==='notes' ? 'wide' : ''}">
+                   <div class="k">${LABELS[k]}</div><div class="v">${esc(cur[k])}</div>
+                 </div>`).join('');
+    const historyHtml = loads.length > 1 ? `
+      <details class="history">
+        <summary>${loads.length-1} earlier load${loads.length>2?'s':''} on this gate</summary>
+        <ul>${loads.slice(1).map(l=>`<li>${esc(l.brand||l.hybrid||'')} · ${esc(l.batch_lot||l.lot||'')}${l.loaded_on?` · ${esc(l.loaded_on)}`:''}</li>`).join('')}</ul>
+      </details>` : '';
+    tag.innerHTML = `
+      <span class="punch" aria-hidden="true"></span>
+      <p class="gate">Gate ${esc(id)}${usingSample ? ' · sample data' : ''}</p>
+      <h2>${esc(brand)}</h2>
+      <div class="lot"><div class="k">Batch / lot</div><div class="v">${esc(lot)}</div></div>
+      ${extras ? `<div class="grid">${extras}</div>` : ''}
+      ${historyHtml}`;
+  }
+  tie.classList.add('show'); tag.classList.add('show');
+  tag.scrollIntoView({behavior:'smooth', block:'nearest'});
+  try{
+    const url = new URL(location.href);
+    url.searchParams.set('gate', id);
+    window.history.replaceState(null,'',url);
+  }catch(e){}
+}
+
+function runLookup(rawInput){
+  const raw = rawInput != null ? rawInput : (CONFIG.idPrefix + el('gateDigits').value);
+  const id = normalizeGateId(raw);
+  if(!isGateId(id)){
+    setStatus('Enter the digits printed under the QR code, or scan the label.','warn');
+    el('gateDigits').focus();
+    return;
+  }
+  el('gateDigits').value = id.slice(CONFIG.idPrefix.length);
+  showResult(id);
+}
+
+/* ---------- QR scanning ---------- */
+let stream = null, rafId = null, jsQRReady = false;
+
+function loadJsQR(){
+  if(jsQRReady) return Promise.resolve();
+  return new Promise((resolve,reject)=>{
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js';
+    s.onload = ()=>{ jsQRReady = true; resolve(); };
+    s.onerror = ()=> reject(new Error('scanner unavailable offline'));
+    document.head.appendChild(s);
+  });
+}
+
+async function openScanner(){
+  const panel = el('scanner'), video = el('video');
+  try{ await loadJsQR(); }
+  catch(e){
+    setStatus('Scanner needs a connection. Type the digits from the label instead.','warn');
+    el('gateDigits').focus(); return;
+  }
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}});
+  }catch(e){
+    setStatus('No camera access. Type the digits from the label instead.','warn');
+    el('gateDigits').focus(); return;
+  }
+  panel.classList.add('open');
+  video.srcObject = stream;
+  await video.play();
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d', {willReadFrequently:true});
+
+  (function tick(){
+    if(!stream) return;
+    if(video.readyState === video.HAVE_ENOUGH_DATA){
+      const w = Math.min(640, video.videoWidth), scale = w / video.videoWidth;
+      canvas.width = w; canvas.height = Math.round(video.videoHeight * scale);
+      ctx.drawImage(video,0,0,canvas.width,canvas.height);
+      const img = ctx.getImageData(0,0,canvas.width,canvas.height);
+      const hit = window.jsQR ? window.jsQR(img.data, img.width, img.height, {inversionAttempts:'dontInvert'}) : null;
+      if(hit && hit.data){
+        const id = normalizeGateId(hit.data);
+        if(isGateId(id)){
+          if(navigator.vibrate) navigator.vibrate(35);
+          closeScanner(); runLookup(id); return;
+        }
+        el('scanHint').textContent = "That code isn't a Gate ID. Scan the label on the slidegate.";
+      }
+    }
+    rafId = requestAnimationFrame(tick);
+  })();
+}
+
+function closeScanner(){
+  el('scanner').classList.remove('open');
+  if(rafId) cancelAnimationFrame(rafId);
+  rafId = null;
+  if(stream){ stream.getTracks().forEach(t=>t.stop()); stream = null; }
+  el('scanHint').textContent = 'Hold the QR code on the gate label inside the frame.';
+}
+
+/* ---------- boot ---------- */
+render();
+const logoImg = document.querySelector('.client img');
+if(logoImg){
+  // If the logo file is missing, fall back to the client's name rather than a broken image
+  logoImg.addEventListener('error', ()=>{
+    const span = document.createElement('span');
+    span.className = 'name';
+    span.textContent = CONFIG.client;
+    logoImg.replaceWith(span);
+  });
+}
+el('gateDigits').addEventListener('input', e=>{
+  const v = e.target.value;
+  if(!/[^0-9]/.test(v)) return;
+  const n = v.length >= 4 ? normalizeGateId(v) : '';
+  e.target.value = n ? n.slice(CONFIG.idPrefix.length) : v.replace(/[^0-9]/g,'');
+});
+el('gateDigits').addEventListener('keydown', e=>{ if(e.key==='Enter') runLookup(); });
+el('lookupBtn').addEventListener('click', ()=> runLookup());
+el('scanBtn').addEventListener('click', openScanner);
+el('scanClose').addEventListener('click', closeScanner);
+document.addEventListener('keydown', e=>{ if(e.key==='Escape' && stream) closeScanner(); });
+
+loadData().then(()=>{
+  const fromUrl = normalizeGateId(location.search + location.hash);
+  if(isGateId(fromUrl)) runLookup(fromUrl);
+});
+})();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+gate_id,brand,batch_lot,seed_size,treatment,loaded_on,box_id,location,grower,filled_by,notes
+SG01001091,Northstar 5822 VT2P,LOT-4471-22B,Round Medium Flat,LumaShield CRW,2026-05-02,BOX-2117,Aurora - Main,Hoffman Farms,J. Reyes,Planter 1 north tank
+SG01001091,Northstar 5610 SSX,LOT-2208-14A,Round Medium,LumaShield 250,2025-04-18,BOX-2117,Aurora - Main,Hoffman Farms,J. Reyes,Previous season load
+SG01001092,Northstar 5822 VT2P,LOT-4471-22B,Round Medium Flat,LumaShield CRW,2026-05-02,BOX-2118,Aurora - Main,Hoffman Farms,J. Reyes,
+SG01001093,Cardinal C64-34 SSTX,LOT-9902-08A,Flat Large,LumaShield CRW + Poncho,2026-05-04,BOX-2119,Bradshaw,Vanek Bros,M. Ottoway,Refuge blend
+SG01001094,Prairie AG38XF1 Soybean,LOT-7715-03C,,Acceleron B-300,2026-05-06,BOX-2120,Bradshaw,Vanek Bros,M. Ottoway,Treated soybean - do not feed
+SG01001095,Cardinal C58-12 VT2P,LOT-9871-45D,Round Medium,LumaShield 500,2026-05-07,BOX-2121,Hampton,Sedlacek Farms,A. Bell,
+SG01001096,Northstar 5915 PWE,LOT-4482-19F,Flat Medium,LumaShield CRW,2026-05-09,BOX-2122,Hampton,Sedlacek Farms,A. Bell,Split load - see delivery ticket
