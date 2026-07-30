@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+<!-- ============================================================
+     NEW PROSPECT CHECKLIST
+     1. Copy this whole folder and rename it to the prospect,
+        lowercase, no spaces:  _template  ->  bayer
+     2. Replace every CLIENT_NAME below.
+     3. Put their two hex colours in the :root block.
+     4. Drop their logo in this folder and name it in "logo".
+     5. Replace gates.csv with rows that look like their business.
+     Live at:  https://seedboxiq.github.io/boxiq/<folder>/
+     ============================================================ -->
+
+<title>BoxIQ for Bayer</title>
+<meta name="description" content="Scan a slidegate Gate ID to see the seed brand and batch/lot in the box. BoxIQ by Seedbox Solution, prepared for CLIENT_NAME.">
+<meta property="og:title" content="BoxIQ for CLIENT_NAME">
+<meta property="og:description" content="Track what's in your box — scan the gate, see the seed.">
+
+<style>
+  :root{
+    --accent:#8FB53C;       /* their primary colour */
+    --accent-deep:#5A7A1E;  /* a darker shade of it */
+    --on-accent:#1F211E;    /* #1F211E on a light accent, #F2F2EE on a dark one */
+  }
+</style>
+<meta name="theme-color" content="#1F211E">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/boxiq-v1.css">
+</head>
+<body>
+<div id="boxiq"></div>
+<script type="application/json" id="boxiq-config">
+{
+  "client": "CLIENT_NAME",
+  "logo": "",
+  "preparedFor": "Prepared for CLIENT_NAME · MONTH YEAR",
+  "dataUrl": "gates.csv",
+  "demoData": true,
+  "supportNote": "Contact your CLIENT_NAME representative.",
+  "footerNote": "BoxIQ by Seedbox Solution · prepared with CLIENT_NAME for evaluation"
+}
+</script>
+<script src="../assets/boxiq-v1.js"></script>
+</body>
+</html>
