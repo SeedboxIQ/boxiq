@@ -36,6 +36,9 @@ const DEFAULTS = {
   inlineData: ''              // CSV/JSON carried inside the page: no fetch, works with no signal
 };
 
+// Where this script was loaded from, so sibling assets resolve at any folder depth.
+const ENGINE_SRC = (document.currentScript && document.currentScript.src) || '';
+
 let CONFIG = DEFAULTS;
 const cfgEl = document.getElementById('boxiq-config');
 if(cfgEl){
@@ -86,14 +89,24 @@ function render(){
     </div>
 
     <div class="actions">
-      <button class="btn btn-primary" id="scanBtn" type="button">
+      <button class="btn btn-primary" id="cameraBtn" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 8.5V7a2 2 0 0 1 2-2h1.6a1 1 0 0 0 .8-.4l.8-1.1a1 1 0 0 1 .8-.4h4.4a1 1 0 0 1 .8.4l.8 1.1a1 1 0 0 0 .8.4H19a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2"/>
+          <circle cx="12" cy="12.5" r="3.4"/>
+        </svg>
+        Use Camera
+      </button>
+      <button class="btn btn-ghost" id="lookupBtn" type="button">Look up</button>
+    </div>
+    <div class="actions actions-sub">
+      <button class="btn btn-ghost btn-wide" id="scanBtn" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
           <path d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3"/>
           <path d="M3 12h18"/>
         </svg>
-        Scan gate label
+        Use Scanner
       </button>
-      <button class="btn btn-ghost" id="lookupBtn" type="button">Look up</button>
     </div>
 
     <p class="status" id="status" role="status" aria-live="polite">Loading gate list…</p>
@@ -318,7 +331,8 @@ function sendCurrent(){
   if(note){
     const again = priorSends ? ` · ${ordinal(priorSends + 1)} send of ${r.gate_id}` : '';
     note.innerHTML = `<strong>Data send successful.</strong> ${esc(DESTINATION)} now holds `
-                   + `${plural(logRows.length)}${esc(again)}.`;
+                   + `${plural(logRows.length)}${esc(again)}. `
+                   + `<button type="button" class="relink" id="scanNext">Scan next gate →</button>`;
     note.classList.remove('flash');
     void note.offsetWidth;
     note.classList.add('flash');
@@ -471,17 +485,19 @@ function runLookup(rawInput){
 let stream = null, rafId = null, jsQRReady = false;
 
 function loadJsQR(){
+  if(window.jsQR){ jsQRReady = true; return Promise.resolve(); }
   if(jsQRReady) return Promise.resolve();
   return new Promise((resolve,reject)=>{
     const s = document.createElement('script');
-    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js';
+    // sits next to this file in assets/ — no CDN, works with no signal
+    s.src = ENGINE_SRC ? new URL('jsqr.js', ENGINE_SRC).href : 'assets/jsqr.js';
     s.onload = ()=>{ jsQRReady = true; resolve(); };
-    s.onerror = ()=> reject(new Error('scanner unavailable offline'));
+    s.onerror = ()=> reject(new Error('decoder missing'));
     document.head.appendChild(s);
   });
 }
 
-async function openScanner(){
+async function openCamera(){
   const panel = el('scanner'), video = el('video');
   try{ await loadJsQR(); }
   catch(e){
@@ -521,6 +537,15 @@ async function openScanner(){
   })();
 }
 
+/* A handheld or wedge scanner types the code into whatever field has focus and
+   sends Enter, so arming it means putting the cursor in the Gate ID box. */
+function useScanner(){
+  const inp = el('gateDigits');
+  inp.value = '';
+  inp.focus();
+  setStatus('Ready for a handheld scanner — scan the label now, or type the digits.');
+}
+
 function closeScanner(){
   el('scanner').classList.remove('open');
   if(rafId) cancelAnimationFrame(rafId);
@@ -549,7 +574,8 @@ el('gateDigits').addEventListener('input', e=>{
 });
 el('gateDigits').addEventListener('keydown', e=>{ if(e.key==='Enter') runLookup(); });
 el('lookupBtn').addEventListener('click', ()=> runLookup());
-el('scanBtn').addEventListener('click', openScanner);
+el('cameraBtn').addEventListener('click', openCamera);
+el('scanBtn').addEventListener('click', useScanner);
 el('scanClose').addEventListener('click', closeScanner);
 
 if(CONFIG.sendTo){
@@ -558,6 +584,7 @@ if(CONFIG.sendTo){
   // the Send button is rebuilt with every result, so listen on the tag instead
   el('tag').addEventListener('click', e=>{
     if(e.target.closest('#sendBtn')) sendCurrent();
+    else if(e.target.closest('#scanNext')) openCamera();
   });
   el('ledgerBtn').addEventListener('click', ()=>{
     renderLedger();
