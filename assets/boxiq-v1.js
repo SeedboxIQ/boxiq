@@ -27,6 +27,8 @@ const DEFAULTS = {
     'Scan or type the Gate ID from the slidegate label.',
     'BoxIQ shows the brand and batch/lot recorded for that gate.'
   ],
+  autoLookup: true,           // look up on its own once a full Gate ID has arrived
+  autoLookupMs: 250,          // quiet period after the last keystroke before firing
   sendTo: true,               // false hides the Send button and the transfer page
   destination: '',            // what the Send button says it sends to
   idPrefix: 'SG',
@@ -528,6 +530,7 @@ async function openCamera(){
         const id = normalizeGateId(hit.data);
         if(isGateId(id)){
           if(navigator.vibrate) navigator.vibrate(35);
+          cancelAutoLookup();
           closeScanner(); runLookup(id); return;
         }
         el('scanHint').textContent = "That code isn't a Gate ID. Scan the label on the slidegate.";
@@ -543,7 +546,8 @@ function useScanner(){
   const inp = el('gateDigits');
   inp.value = '';
   inp.focus();
-  setStatus('Ready for a handheld scanner — scan the label now, or type the digits.');
+  rawBuffer = '';
+  setStatus('Ready for a handheld scanner — scan the label and it looks itself up, or type the digits.');
 }
 
 function closeScanner(){
@@ -553,6 +557,42 @@ function closeScanner(){
   if(stream){ stream.getTracks().forEach(t=>t.stop()); stream = null; }
   el('scanHint').textContent = 'Hold the QR code on the gate label inside the frame.';
 }
+
+/* ---------- auto lookup ----------
+   A handheld scanner types the label's whole URL into the field at machine speed
+   and, depending on how it was configured, may send no Enter at all. So we keep a
+   raw buffer of what actually arrived (the field itself only ever shows digits) and,
+   once typing goes quiet with a complete Gate ID in hand, we look it up. No Look up
+   tap needed — by scanner or by thumb. Partial input is left alone, so nobody gets
+   a "not found" halfway through entering an ID. */
+let rawBuffer = '', quietTimer = null;
+const idComplete = id => id.length === CONFIG.idPrefix.length + CONFIG.idDigits;
+
+function noteKeystroke(text){
+  if(!CONFIG.autoLookup) return;
+  rawBuffer = (rawBuffer + text).slice(-300);
+}
+// Only fire on a genuinely whole ID. normalizeGateId() zero-pads short entries,
+// which is right for a deliberate Look up but would make "0100" fire as SG00000100
+// while someone is still typing — so require the real digits to be there.
+function completeIdFrom(text){
+  const id = normalizeGateId(text);
+  if(!isGateId(id) || !idComplete(id)) return '';
+  return String(text).replace(/\D/g,'').length >= CONFIG.idDigits ? id : '';
+}
+function armAutoLookup(){
+  if(!CONFIG.autoLookup) return;
+  clearTimeout(quietTimer);
+  quietTimer = setTimeout(()=>{
+    const id = completeIdFrom(rawBuffer) ||
+               completeIdFrom(CONFIG.idPrefix + el('gateDigits').value);
+    if(id){
+      rawBuffer = '';
+      runLookup(id);
+    }
+  }, CONFIG.autoLookupMs);
+}
+function cancelAutoLookup(){ clearTimeout(quietTimer); rawBuffer = ''; }
 
 /* ---------- boot ---------- */
 render();
@@ -572,7 +612,18 @@ el('gateDigits').addEventListener('input', e=>{
   const n = v.length >= 4 ? normalizeGateId(v) : '';
   e.target.value = n ? n.slice(CONFIG.idPrefix.length) : v.replace(/[^0-9]/g,'');
 });
-el('gateDigits').addEventListener('keydown', e=>{ if(e.key==='Enter') runLookup(); });
+el('gateDigits').addEventListener('keydown', e=>{
+  if(e.key === 'Enter'){ cancelAutoLookup(); runLookup(); return; }
+  // some scanners are configured to finish with Tab rather than Enter
+  if(e.key === 'Tab' && el('gateDigits').value){ cancelAutoLookup(); runLookup(); return; }
+  if(e.key.length === 1) noteKeystroke(e.key);
+});
+el('gateDigits').addEventListener('paste', e=>{
+  const text = e.clipboardData && e.clipboardData.getData('text');
+  if(text) noteKeystroke(text);
+});
+el('gateDigits').addEventListener('input', armAutoLookup);
+el('gateDigits').addEventListener('focus', ()=>{ rawBuffer = ''; });
 el('lookupBtn').addEventListener('click', ()=> runLookup());
 el('cameraBtn').addEventListener('click', openCamera);
 el('scanBtn').addEventListener('click', useScanner);
