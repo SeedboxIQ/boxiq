@@ -27,6 +27,8 @@ const DEFAULTS = {
     'Scan or type the Gate ID from the slidegate label.',
     'BoxIQ shows the brand and batch/lot recorded for that gate.'
   ],
+  sendTo: true,               // false hides the Send button and the transfer page
+  destination: '',            // what the Send button says it sends to
   idPrefix: 'SG',
   idDigits: 8,
   cacheBustMinutes: 5,
@@ -96,6 +98,10 @@ function render(){
 
     <p class="status" id="status" role="status" aria-live="polite">Loading gate list…</p>
 
+    ${CONFIG.sendTo ? `<button class="ledger-strip" id="ledgerBtn" type="button">
+      <span>Data transfer page</span><span class="count" id="ledgerCount">0 rows</span>
+    </button>` : ''}
+
     <div class="tie" id="tie" aria-hidden="true"></div>
     <section class="tag" id="tag" aria-live="polite"></section>
 
@@ -106,6 +112,20 @@ function render(){
 
     <footer id="foot">${esc(CONFIG.footerNote)}</footer>
   </main>
+
+  <div class="ledger" id="ledger" role="dialog" aria-modal="true" aria-label="Data transfer page">
+    <div class="ledger-head">
+      <div class="to" id="ledgerTo"></div>
+      <div class="n"><b id="ledgerBig">0</b><span id="ledgerBigLabel">rows received</span></div>
+      <div class="file">gate-receive.csv</div>
+    </div>
+    <div class="ledger-body" id="ledgerBody"></div>
+    <div class="ledger-foot">
+      <button class="btn btn-close" id="ledgerClose" type="button">Back to scanning</button>
+      <button class="btn btn-ghost" id="ledgerCsv" type="button">Download CSV</button>
+      <button class="btn btn-ghost" id="ledgerClear" type="button">Clear log</button>
+    </div>
+  </div>
 
   <div class="scanner" id="scanner" role="dialog" aria-modal="true" aria-label="Scan gate label">
     <video id="video" playsinline muted></video>
@@ -230,6 +250,141 @@ async function loadData(){
   }
 }
 
+/* ---------- receiving log: this device only ----------
+   GitHub Pages is static hosting, so nothing can write a file on the server.
+   The log lives in this browser and exports as gate-receive.csv, which is the
+   artifact worth handing to a customer's IT group. Rows are append-only: the
+   same gate sent three times is three timestamped events, and de-duplicating
+   on gate_id + scanned_at is the receiving system's business rule, not ours. */
+const DESTINATION = CONFIG.destination ||
+      ((CONFIG.client ? CONFIG.client + ' ' : '') + 'receiving log');
+const LOG_KEY = 'boxiq.receive.' + (CONFIG.client || location.pathname);
+const LOG_CAP = 500;
+const LOG_COLUMNS = ['seq','gate_id','brand','batch_lot','loaded_on','box_id',
+                     'client','source','scanned_at','scan_number'];
+let logRows = [];
+let currentLoad = null;   // the record on screen, or null for a miss
+
+function loadLog(){
+  try{
+    const raw = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
+    logRows = Array.isArray(raw) ? raw : [];
+  }catch(e){ logRows = []; }   // private browsing: the log stays in memory
+}
+function saveLog(){
+  try{ localStorage.setItem(LOG_KEY, JSON.stringify(logRows)); }catch(e){}
+}
+const plural = n => n === 1 ? '1 row' : n + ' rows';
+function ordinal(n){
+  const s = ['th','st','nd','rd'], v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+function shortTime(iso){
+  const d = new Date(iso);
+  const t = d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+  return d.toDateString() === new Date().toDateString()
+    ? t : d.toLocaleDateString([], {month:'short', day:'numeric'}) + ' ' + t;
+}
+
+function updateStrip(){
+  const strip = el('ledgerBtn');
+  if(!strip) return;
+  el('ledgerCount').textContent = plural(logRows.length);
+  strip.dataset.has = logRows.length ? 'yes' : 'no';
+}
+
+function sendCurrent(){
+  if(!currentLoad) return;
+  const r = currentLoad;
+  const priorSends = logRows.filter(x => x.gate_id === r.gate_id).length;
+  logRows.push({
+    seq: logRows.length + 1,
+    gate_id: r.gate_id,
+    brand: r.brand,
+    batch_lot: r.batch_lot,
+    loaded_on: r.loaded_on || '',
+    box_id: r.box_id || '',
+    client: CONFIG.client || '',
+    source: 'boxiq',
+    scanned_at: new Date().toISOString(),
+    scan_number: priorSends + 1
+  });
+  if(logRows.length > LOG_CAP) logRows = logRows.slice(-LOG_CAP);
+  saveLog();
+  updateStrip();
+
+  const note = el('sentNote');
+  if(note){
+    const again = priorSends ? ` · ${ordinal(priorSends + 1)} send of ${r.gate_id}` : '';
+    note.innerHTML = `<strong>Data send successful.</strong> ${esc(DESTINATION)} now holds `
+                   + `${plural(logRows.length)}${esc(again)}.`;
+    note.classList.remove('flash');
+    void note.offsetWidth;
+    note.classList.add('flash');
+  }
+  if(navigator.vibrate) navigator.vibrate(20);
+}
+
+function renderLedger(){
+  el('ledgerTo').textContent = 'Sent to ' + DESTINATION;
+  el('ledgerBig').textContent = String(logRows.length);
+  el('ledgerBigLabel').textContent = logRows.length === 1 ? 'row received' : 'rows received';
+  const body = el('ledgerBody');
+  if(!logRows.length){
+    body.innerHTML = `<div class="ledger-empty">Nothing received yet.<br>
+      Look up a gate, then tap Send.</div>`;
+    return;
+  }
+  const rows = logRows.slice().reverse().map(r => `
+    <tr>
+      <td class="seq">${r.seq}</td>
+      <td>
+        <div class="gate">${esc(r.gate_id)}${r.scan_number > 1
+          ? `<span class="dup">${esc(ordinal(r.scan_number))} send</span>` : ''}</div>
+        <div class="time">${esc(shortTime(r.scanned_at))}</div>
+      </td>
+      <td>
+        <div class="brand">${esc(r.brand)}</div>
+        <div class="lot">${esc(r.batch_lot)}${r.box_id ? ' · ' + esc(r.box_id) : ''}</div>
+      </td>
+    </tr>`).join('');
+  body.innerHTML = `<table class="feed">
+      <thead><tr><th>#</th><th>Gate &amp; time</th><th>Brand &amp; lot</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <p class="ledger-note">Newest first. Every send is its own row — repeat scans of the same
+    gate arrive as separate timestamped events, which is what a receiving system wants.</p>`;
+}
+
+function logCsv(){
+  const cell = v => {
+    v = v == null ? '' : String(v);
+    return /[",\n]/.test(v) ? '"' + v.replace(/"/g,'""') + '"' : v;
+  };
+  return [LOG_COLUMNS.join(',')]
+    .concat(logRows.map(r => LOG_COLUMNS.map(c => cell(r[c])).join(',')))
+    .join('\n');
+}
+
+function downloadCsv(){
+  if(!logRows.length) return;
+  const name = 'gate-receive' + (CONFIG.client ? '-' + CONFIG.client.toLowerCase().replace(/[^a-z0-9]+/g,'-') : '') + '.csv';
+  const blob = new Blob([logCsv()], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 1500);
+}
+
+function clearLog(){
+  if(logRows.length && !confirm(`Clear all ${plural(logRows.length)} from ${DESTINATION}?`)) return;
+  logRows = [];
+  saveLog();
+  updateStrip();
+  renderLedger();
+}
+
 /* ---------- rendering a result ---------- */
 const LABELS = {
   seed_size:'Seed size', treatment:'Treatment', loaded_on:'Loaded', date_loaded:'Loaded',
@@ -244,6 +399,7 @@ function showResult(id){
   void tag.offsetWidth; // restart the drop animation
 
   if(!loads){
+    currentLoad = null;
     tag.innerHTML = `
       <span class="punch" aria-hidden="true"></span>
       <p class="gate">${esc(id)}</p>
@@ -256,6 +412,11 @@ function showResult(id){
     const cur = loads[0];
     const brand = cur.brand || cur.hybrid || cur.seed_brand || cur.variety;
     const lot = cur.batch_lot || cur.lot || cur.batch || cur.lot_number || '—';
+    currentLoad = {
+      gate_id: id, brand, batch_lot: lot,
+      loaded_on: cur.loaded_on || cur.date_loaded || '',
+      box_id: cur.box_id || ''
+    };
     const extras = Object.keys(LABELS)
       .filter(k => cur[k])
       .map(k => `<div class="${k==='notes' ? 'wide' : ''}">
@@ -272,10 +433,20 @@ function showResult(id){
       <h2>${esc(brand)}</h2>
       <div class="lot"><div class="k">Batch / lot</div><div class="v">${esc(lot)}</div></div>
       ${extras ? `<div class="grid">${extras}</div>` : ''}
-      ${historyHtml}`;
+      ${historyHtml}
+      ${CONFIG.sendTo ? `<div class="send-row">
+        <button class="btn-send" id="sendBtn" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 12h13M12 5l7 7-7 7"/><path d="M20 4v16" opacity=".45"/>
+          </svg>
+          Send to ${esc(DESTINATION)}
+        </button>
+        <p class="sent-note" id="sentNote" role="status" aria-live="polite"></p>
+      </div>` : ''}`;
   }
   tie.classList.add('show'); tag.classList.add('show');
-  tag.scrollIntoView({behavior:'smooth', block:'nearest'});
+  if(tag.scrollIntoView) tag.scrollIntoView({behavior:'smooth', block:'nearest'});
   try{
     const url = new URL(location.href);
     url.searchParams.set('gate', id);
@@ -379,7 +550,29 @@ el('gateDigits').addEventListener('keydown', e=>{ if(e.key==='Enter') runLookup(
 el('lookupBtn').addEventListener('click', ()=> runLookup());
 el('scanBtn').addEventListener('click', openScanner);
 el('scanClose').addEventListener('click', closeScanner);
-document.addEventListener('keydown', e=>{ if(e.key==='Escape' && stream) closeScanner(); });
+
+if(CONFIG.sendTo){
+  loadLog();
+  updateStrip();
+  // the Send button is rebuilt with every result, so listen on the tag instead
+  el('tag').addEventListener('click', e=>{
+    if(e.target.closest('#sendBtn')) sendCurrent();
+  });
+  el('ledgerBtn').addEventListener('click', ()=>{
+    renderLedger();
+    el('ledger').classList.add('open');
+    el('ledgerClose').focus();
+  });
+  el('ledgerClose').addEventListener('click', ()=> el('ledger').classList.remove('open'));
+  el('ledgerCsv').addEventListener('click', downloadCsv);
+  el('ledgerClear').addEventListener('click', clearLog);
+}
+
+document.addEventListener('keydown', e=>{
+  if(e.key !== 'Escape') return;
+  if(stream) closeScanner();
+  else if(CONFIG.sendTo && el('ledger').classList.contains('open')) el('ledger').classList.remove('open');
+});
 
 loadData().then(()=>{
   const fromUrl = normalizeGateId(location.search + location.hash);
