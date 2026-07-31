@@ -98,12 +98,13 @@ function render(){
 
     <p class="status" id="status" role="status" aria-live="polite">Loading gate list…</p>
 
+    <div class="tie" id="tie" aria-hidden="true"></div>
+    <section class="tag" id="tag" aria-live="polite"></section>
+
     ${CONFIG.sendTo ? `<button class="ledger-strip" id="ledgerBtn" type="button">
       <span>Data transfer page</span><span class="count" id="ledgerCount">0 rows</span>
     </button>` : ''}
 
-    <div class="tie" id="tie" aria-hidden="true"></div>
-    <section class="tag" id="tag" aria-live="polite"></section>
 
     <section class="how">
       <h3>How it works</h3>
