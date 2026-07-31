@@ -228,10 +228,15 @@ function buildIndex(records){
   return count;
 }
 
+let neutralStatus = '';
 function setStatus(msg, tone){
   const s = el('status');
   s.textContent = msg;
-  if(tone) s.setAttribute('data-tone',tone); else s.removeAttribute('data-tone');
+  if(tone){ s.setAttribute('data-tone',tone); }
+  else { s.removeAttribute('data-tone'); neutralStatus = msg; }
+}
+function clearWarning(){
+  if(el('status').getAttribute('data-tone') && neutralStatus) setStatus(neutralStatus);
 }
 
 async function loadData(){
@@ -480,6 +485,8 @@ function runLookup(rawInput){
     return;
   }
   el('gateDigits').value = id.slice(CONFIG.idPrefix.length);
+  lastSeen = el('gateDigits').value;
+  scannerArmed = false;
   showResult(id);
 }
 
@@ -546,7 +553,7 @@ function useScanner(){
   const inp = el('gateDigits');
   inp.value = '';
   inp.focus();
-  rawBuffer = '';
+  rawBuffer = ''; lastSeen = ''; suppressUntil = 0; scannerArmed = true; sawBurst = false;
   setStatus('Ready for a handheld scanner — scan the label and it looks itself up, or type the digits.');
 }
 
@@ -565,7 +572,8 @@ function closeScanner(){
    once typing goes quiet with a complete Gate ID in hand, we look it up. No Look up
    tap needed — by scanner or by thumb. Partial input is left alone, so nobody gets
    a "not found" halfway through entering an ID. */
-let rawBuffer = '', quietTimer = null;
+let rawBuffer = '', quietTimer = null, lastSeen = '', suppressUntil = 0;
+let scannerArmed = false, sawBurst = false;
 const idComplete = id => id.length === CONFIG.idPrefix.length + CONFIG.idDigits;
 
 function noteKeystroke(text){
@@ -576,23 +584,53 @@ function noteKeystroke(text){
 // which is right for a deliberate Look up but would make "0100" fire as SG00000100
 // while someone is still typing — so require the real digits to be there.
 function completeIdFrom(text){
+  if(!text) return '';
   const id = normalizeGateId(text);
   if(!isGateId(id) || !idComplete(id)) return '';
   return String(text).replace(/\D/g,'').length >= CONFIG.idDigits ? id : '';
 }
+
 function armAutoLookup(){
   if(!CONFIG.autoLookup) return;
   clearTimeout(quietTimer);
   quietTimer = setTimeout(()=>{
-    const id = completeIdFrom(rawBuffer) ||
-               completeIdFrom(CONFIG.idPrefix + el('gateDigits').value);
+    const field = el('gateDigits').value;
+    // in order: keystrokes we captured, the field as-is (a scanner may have dropped
+    // a whole URL in there), then the field read as bare digits
+    const id = completeIdFrom(rawBuffer) || completeIdFrom(field) ||
+               completeIdFrom(CONFIG.idPrefix + field);
     if(id){
       rawBuffer = '';
+      suppressUntil = Date.now() + 400;   // ignore any tail the scanner is still sending
       runLookup(id);
+      return;
+    }
+    // A scan arrived and nothing usable was in it: say so rather than sit silent.
+    // sawBurst keeps this off the back of someone typing an ID a digit at a time.
+    if(scannerArmed && sawBurst && (rawBuffer.length >= 4 || field.length >= 4)){
+      const seen = (rawBuffer || field).slice(-46);
+      setStatus('Read "' + seen + '" — no complete Gate ID in that. Tap Look up, or check what the scanner is set to send.','warn');
     }
   }, CONFIG.autoLookupMs);
 }
-function cancelAutoLookup(){ clearTimeout(quietTimer); rawBuffer = ''; }
+
+/* Some scanners type into the field, some assign its value outright, and the ones
+   that assign fire no keyboard or input event at all — which is why watching events
+   was never going to be enough. Watch the value itself instead: whatever put it
+   there, a change starts the quiet timer. */
+function watchField(){
+  const now = el('gateDigits').value;
+  if(now === lastSeen) return;
+  sawBurst = (now.length - lastSeen.length) > 3;   // machines arrive in one gulp
+  lastSeen = now;
+  if(Date.now() < suppressUntil) return;
+  armAutoLookup();
+}
+function cancelAutoLookup(){
+  clearTimeout(quietTimer);
+  rawBuffer = '';
+  lastSeen = el('gateDigits') ? el('gateDigits').value : '';
+}
 
 /* ---------- boot ---------- */
 render();
@@ -623,7 +661,9 @@ el('gateDigits').addEventListener('paste', e=>{
   if(text) noteKeystroke(text);
 });
 el('gateDigits').addEventListener('input', armAutoLookup);
-el('gateDigits').addEventListener('focus', ()=>{ rawBuffer = ''; });
+el('gateDigits').addEventListener('change', armAutoLookup);
+el('gateDigits').addEventListener('focus', ()=>{ rawBuffer = ''; sawBurst = false; clearWarning(); });
+if(CONFIG.autoLookup) setInterval(watchField, 120);
 el('lookupBtn').addEventListener('click', ()=> runLookup());
 el('cameraBtn').addEventListener('click', openCamera);
 el('scanBtn').addEventListener('click', useScanner);
